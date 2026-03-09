@@ -3,6 +3,8 @@ from typing import List, Dict
 from ib_strategies.strategy_base import StrategyBase
 from ib_strategies.logs import MyLog
 
+PLACE_ORDER_WITHOUT_MARKET_DATA_WARNING = 'You are submitting an order without market data. We strongly recommend against this as it may result in erroneous and unexpected trades.\nAre you sure you want to submit this order?'
+
 
 class StrategyOrder(StrategyBase):
     def __init__(self):
@@ -20,7 +22,16 @@ class StrategyOrder(StrategyBase):
             Dict: Order response from IB Gateway
         """
         
-        return self.ibgc.place_orders(self.account_id, orders)
+
+        return_ =  self.ibgc.place_orders(self.account_id, orders)
+
+        if isinstance(return_, list) and len(return_) > 0 and 'id' in return_[0]:
+            reply_id = return_[0]['id']
+            message = return_[0]['message']
+            if len(message)==1 and message[0]==PLACE_ORDER_WITHOUT_MARKET_DATA_WARNING:
+                return self.order_reply(reply_id, True)
+        else:
+            return return_
         
     @MyLog.log_decorator()
     def preview_multiple_orders(self, orders: List[Dict]):
@@ -98,3 +109,8 @@ class StrategyOrder(StrategyBase):
         """
         order_status = self.get_order_status(self.order_id)
         return order_status.get("order_status") == "Cancelled"
+
+    @MyLog.log_decorator()
+    def order_reply(self, reply_id: str, confirmed: bool) -> Dict:
+        """Reply to an order"""
+        return self.ibgc.reply_order(reply_id, confirmed)

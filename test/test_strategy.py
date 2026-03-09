@@ -19,6 +19,12 @@ if log_path is None:
 
 
 
+what_to_do = [0, 1, 2, 3, 4, 5]
+order_id = None
+
+
+
+
 class MyStrategy(Strategy):
     def __init__(self, *arg, **kwargs):
         super().__init__(*arg, **kwargs)
@@ -27,22 +33,98 @@ class MyStrategy(Strategy):
 
         print(self.my_datasource, self.real_data_source)
         print(data["symbol"], data["last_price"], data["_updated"]) 
-
-        # print(self.preview_multiple_orders(
-        #         [
-        #             {
-        #                 "conid": 265598,
-        #                 "orderType": "LMT",
-        #                 "side": "BUY",
-        #                 "quantity": 1,
-        #                 "price": 257.00,
-        #                 "tif": "GTC"
-        #             }
-        #         ]
-        #     ))
+        
 
     def schedule_task(self):
+
+        global order_id
+        global what_to_do
+
+        i = None
+        if len(what_to_do)>0:
+            i = what_to_do.pop(0)
+
+       
+        if i==0:
+            # 预览订单，假设下单然后
+            print(f"{'='*30}")
+            print("return of preview_multiple_orders")
+            print(self.preview_multiple_orders(
+                    [
+                        {
+                            "conid": 265598,
+                            "orderType": "LMT", # 限价单
+                            "side": "BUY",
+                            "quantity": 1,
+                            "price": 257.00,
+                            "tif": "GTC"
+                        }
+                    ]
+                ))
+        elif i==1:
+            # 市价买
+            print(f"{'='*30}")
+            print("return of place_multiple_orders")
+            return_ = self.place_multiple_orders(
+                    [
+                        {
+                            "conid": 265598,         # 苹果公司的合约 ID
+                            "secType": "STK",        # 股票类型
+                            "orderType": "MARKET",   # 关键：设置为市价单
+                            "side": "BUY",           # 买入
+                            "quantity": 1,          # 数量
+                            "tif": "GTC"             # 订单有效期 (Good 'Til Canceled)
+                        }
+                    ]
+                )
+            order_id = return_[0]["order_id"]
+            print(return_)
+        elif i==2:
+            print(f"{'='*30}")
+            print("return of get_order_status")
+            print(self.get_order_status(order_id))
+        elif i==3:
+            print(f"{'='*30}")
+            print("return of get_all_orders")
+            print(self.get_all_orders())
+        elif i==4:
+            print(f"{'='*30}")
+            print("return of get_positions")
+            print(self.ibgc.get_positions(self.account_id))
+        elif i==5:
+            status = self.get_order_status(order_id)
+            if status["status"] == "Filled":
+                print(f"{'='*30}")
+                print("buy success, sell it now")
+                print("return of place_multiple_orders")
+                self.place_multiple_orders(
+                    [
+                        {
+                            "conid": 265598,         # 苹果公司的合约 ID
+                            "secType": "STK",        # 股票类型
+                            "orderType": "MARKET",   # 关键：设置为市价单
+                            "side": "SELL",           # 买入
+                            "quantity": 1,          # 数量
+                            "tif": "GTC"             # 订单有效期 (Good 'Til Canceled)
+                        }
+                    ]
+                )
+            else:
+                print(f"{'='*30}")
+                print("buy failed, cancel it")
+                print("return of cancel_order")
+                print(self.cancel_order(order_id))
+
         print("schedule task")
+
+
+
+
+
+
+
+
+
 
 
 my_strategy = MyStrategy("test_strategy", 
