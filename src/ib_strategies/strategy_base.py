@@ -66,11 +66,12 @@ class StrategyBase():
         if len(self.my_sub_conid)>0:
             self.start_update_market_snapshot()
 
-        while True:
-            time.sleep(self.schedule_task_interval)
-            try:
-                self.schedule_task()
-                self.logger.log("INFO", f"Schedule task finished", tag=self.log_id)
-            except Exception as e:
-                self.logger.log("ERROR", f"Error in schedule_task: {e}", tag=self.log_id)
+        if self.schedule_task_interval>0:
+            while True:
+                time.sleep(self.schedule_task_interval)
+                try:
+                    self.schedule_task()
+                    self.logger.log("INFO", f"Schedule task finished", tag=self.log_id)
+                except Exception as e:
+                    self.logger.log("ERROR", f"Error in schedule_task: {e}", tag=self.log_id)
 
